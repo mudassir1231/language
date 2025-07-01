@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>English-Arabic Word Match Game</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f0f4f8;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    #game-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      max-width: 900px;
+      margin: 0 auto 20px auto;
+    }
+    .word-column {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+      flex: 1;
+      user-select: none;
+      display: flex;
+      flex-direction: column;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .word-column h2 {
+      margin-bottom: 10px;
+      font-size: 1.2rem;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 8px;
+    }
+    .word {
+      background: #e0e7ff;
+      margin: 1px 0;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: border-color 0.3s, background-color 0.3s;
+      border: 2px solid transparent;
+      text-align: left;
+    }
+    .word:hover {
+      background: #c7d2fe;
+    }
+    .selected {
+      border-color: #2563eb;
+      background: #bfdbfe;
+    }
+    .correct {
+      border-color: #16a34a !important;
+      background: #bbf7d0 !important;
+      cursor: default;
+    }
+    .incorrect {
+      border-color: #dc2626 !important;
+      background: #fecaca !important;
+    }
+    #end-btn, #next-btn {
+      margin-top: 20px;
+      padding: 10px 30px;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 6px;
+      background-color: #2563eb;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    #end-btn:hover:not(:disabled), #next-btn:hover {
+      background-color: #1e40af;
+    }
+    #next-btn {
+      display: none;
+      margin-left: 10px;
+    }
+    #score-display {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-top: 15px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Match the English Words with Arabic Pronunciations</h1>
+<div id="game-container">
+  <div class="word-column" id="english-column">
+    <h2>English</h2>
+    <div id="english-list" style="gap: -10px;"></div>
+  </div>
+  <div class="word-column" id="arabic-column">
+    <!-- <h2>Arabic</h2> -->
+    <div id="arabic-list"></div>
+  </div>
+</div>
+
+  <button id="end-btn">End Game</button>
+  <button id="next-btn">Next Page</button>
+  <div id="score-display"></div>
+
+  <script>
+    const wordPairs = [
+      ["I", "ana"], ["you", "anta / anti"], ["he", "huwa"], ["she", "hiya"],
+      ["it", "huwa / hiya"], ["we", "nahnu"], ["they", "hum"], ["go", "yadhhab"],
+      ["come", "yajee'"], ["eat", "ya’kul"], ["drink", "yashrab"], ["see", "yaraa"],
+      ["hear", "yasma‘"], ["say", "yaqool"], ["speak", "yatakallam"], ["want", "yureed"],
+      ["give", "yu‘ti"], ["take", "ya’khudh"], ["get", "yahsil"], ["make", "yasna‘"],
+      ["do", "yaf‘al"], ["know", "ya‘rif"], ["like", "yuheb"], ["love", "yuhibb"],
+      ["need", "yahtaj"], ["have", "‘indahu"], ["live", "ya‘eesh"], ["sleep", "yanam"],
+      ["wake", "yastaikiz"], ["walk", "yamshee"], ["run", "yarkudh"], ["sit", "yajlis"],
+      ["stand", "yaqif"], ["help", "yusa‘id"], ["put", "yada‘"], ["open", "yaftah"],
+      ["close", "yughliq"], ["who", "man"], ["what", "ma"], ["where", "ayna"],
+      ["when", "mata"], ["why", "limadha"], ["how", "kayfa"], ["and", "wa"],
+      ["but", "lakin"], ["or", "aw"], ["because", "li’anna"], ["if", "itha"],
+      ["then", "thumma"], ["so", "fa"], ["also", "aydan"], ["though", "ma‘a dhalik"],
+      ["while", "baynama"], ["big", "kabeer"], ["small", "saġeer"], ["good", "jayyid"],
+      ["bad", "sayyi’"], ["hot", "haar"], ["cold", "baarid"], ["fast", "saree‘"],
+      ["slow", "batee’"], ["new", "jadeed"], ["old", "qadeem"], ["happy", "sa‘eed"],
+      ["sad", "hazeen"], ["easy", "sahl"], ["hard", "sa‘b"], ["long", "taweel"],
+      ["short", "qaseer"], ["strong", "qawi"], ["weak", "da‘eef"], ["right", "saheeh"],
+      ["wrong", "khata’"], ["here", "huna"], ["there", "hunak"], ["now", "al-aan"],
+      ["very", "jiddan"], ["too", "aydan"], ["not", "laysa"], ["always", "da’iman"],
+      ["sometimes", "ahyanan"], ["never", "abadan"], ["can", "yumkin"],
+      ["could", "kana yumkin"], ["will", "sawfa"], ["would", "kan sawfa"],
+      ["shall", "sawfa"], ["should", "yanbaghi"], ["must", "yajibu"],
+      ["may", "qad"], ["today", "alyawm"], ["tomorrow", "ghadan"],
+      ["yesterday", "ams"], ["later", "ba‘d"], ["before", "qabl"], ["after", "ba‘da"],
+      ["morning", "sabah"], ["evening", "masa’"], ["night", "layl"]
+    ];
+
+    const PAGE_SIZE = 10;
+    let currentPage = 0;
+    let currentPagePairs = [];
+
+    const englishCol = document.getElementById("english-column");
+    const arabicCol = document.getElementById("arabic-list");
+    const endBtn = document.getElementById("end-btn");
+    const nextBtn = document.getElementById("next-btn");
+    const scoreDisplay = document.getElementById("score-display");
+
+    let selectedEnglish = null;
+    let selectedArabic = null;
+    let score = 0;
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    shuffle(wordPairs);
+
+    function clearSelections() {
+      if (selectedEnglish) selectedEnglish.classList.remove("selected");
+      if (selectedArabic) selectedArabic.classList.remove("selected");
+      selectedEnglish = null;
+      selectedArabic = null;
+    }
+
+    function disableWord(wordEl) {
+      wordEl.style.pointerEvents = "none";
+      wordEl.style.opacity = "0.6";
+      wordEl.classList.remove("selected");
+    }
+
+    function findMatch(english, pairs) {
+      for (const [en, ar] of pairs) {
+        if (en === english) return ar;
+      }
+      return null;
+    }
+
+    function createWordElements(words, container, isEnglish) {
+      container.innerHTML = "";
+      words.forEach(word => {
+        const div = document.createElement("div");
+        div.textContent = word;
+        div.className = "word";
+        div.dataset.word = word;
+
+        div.addEventListener("click", () => {
+          if (div.classList.contains("correct")) return;
+
+          if (isEnglish) {
+            if (selectedEnglish) selectedEnglish.classList.remove("selected");
+            selectedEnglish = div;
+            div.classList.add("selected");
+          } else {
+            if (selectedArabic) selectedArabic.classList.remove("selected");
+            selectedArabic = div;
+            div.classList.add("selected");
+          }
+
+          if (selectedEnglish && selectedArabic) {
+            const correctArabic = findMatch(selectedEnglish.dataset.word, currentPagePairs);
+            if (selectedArabic.dataset.word === correctArabic) {
+              selectedEnglish.classList.add("correct");
+              selectedArabic.classList.add("correct");
+              disableWord(selectedEnglish);
+              disableWord(selectedArabic);
+              score++;
+              clearSelections();
+            } else {
+              selectedEnglish.classList.add("incorrect");
+              selectedArabic.classList.add("incorrect");
+              setTimeout(() => {
+                selectedEnglish.classList.remove("incorrect");
+                selectedArabic.classList.remove("incorrect");
+                clearSelections();
+              }, 1000);
+            }
+          }
+        });
+
+        container.appendChild(div);
+      });
+    }
+
+    function loadPage(pageIndex) {
+      score = 0;
+      selectedEnglish = null;
+      selectedArabic = null;
+      scoreDisplay.textContent = "";
+      endBtn.disabled = false;
+      nextBtn.style.display = "none";
+
+      const start = pageIndex * PAGE_SIZE;
+      const end = start + PAGE_SIZE;
+      currentPagePairs = wordPairs.slice(start, end);
+
+      if (currentPagePairs.length === 0) {
+        englishCol.innerHTML = "<h2>English</h2><p>No more words!</p>";
+        arabicCol.innerHTML = "";
+        endBtn.style.display = "none";
+        nextBtn.style.display = "none";
+        return;
+      }
+
+      const englishWords = currentPagePairs.map(p => p[0]);
+      const arabicWords = currentPagePairs.map(p => p[1]);
+
+      shuffle(englishWords);
+      shuffle(arabicWords);
+
+      createWordElements(englishWords, englishCol, true);
+      createWordElements(arabicWords, arabicCol, false);
+    }
+
+    endBtn.addEventListener("click", () => {
+      scoreDisplay.textContent = `Your score: ${score} / ${currentPagePairs.length}`;
+      endBtn.disabled = true;
+
+      // Rearrange correct pairs
+      englishCol.innerHTML = "<h2>English</h2>";
+      arabicCol.innerHTML = "<h2>Arabic Pronunciation</h2>";
+
+      currentPagePairs.forEach(([en, ar]) => {
+        const enDiv = document.createElement("div");
+        enDiv.textContent = en;
+        enDiv.className = "word correct";
+        englishCol.appendChild(enDiv);
+
+        const arDiv = document.createElement("div");
+        arDiv.textContent = ar;
+        arDiv.className = "word correct";
+        arabicCol.appendChild(arDiv);
+      });
+
+      if ((currentPage + 1) * PAGE_SIZE < wordPairs.length) {
+        nextBtn.style.display = "inline-block";
+      } else {
+        scoreDisplay.textContent += " | All pages completed!";
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      currentPage++;
+      loadPage(currentPage);
+    });
+
+    loadPage(currentPage);
+  </script>
+</body>
+</html>
