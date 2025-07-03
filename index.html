@@ -92,20 +92,34 @@
       margin-top: 15px;
       color: #333;
     }
+    #page-selector {
+      padding: 8px 12px;
+      margin-top: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
   <h1>Match the English Words with Arabic Pronunciations</h1>
-<div id="game-container">
-  <div class="word-column" id="english-column">
-    <h2>English</h2>
-    <div id="english-list" style="gap: -10px;"></div>
+
+  <div style="margin-top: 20px;">
+    <label for="page-selector" style="font-weight: bold;">Select Page: </label>
+    <select id="page-selector"></select>
   </div>
-  <div class="word-column" id="arabic-column">
-    <!-- <h2>Arabic</h2> -->
-    <div id="arabic-list"></div>
+  
+  <div id="game-container">
+    <div class="word-column" id="english-column">
+      <h2>English</h2>
+      <div id="english-list"></div>
+    </div>
+    <div class="word-column" id="arabic-column">
+      <h2>Arabic Pronunciation</h2>
+      <div id="arabic-list"></div>
+    </div>
   </div>
-</div>
+
 
   <button id="end-btn">End Game</button>
   <button id="next-btn">Next Page</button>
@@ -113,7 +127,12 @@
 
   <script>
     const wordPairs = [
-      ["I", "ana"], ["you", "anta / anti"], ["he", "huwa"], ["she", "hiya"],
+      ["I", "ana"], ["you", "anta / anti"], ["he", "huwa"], ["she", "hiya"],["happy", "saeed / sayeda"],
+      ["and", "wa"], ["here", "huna"], ["i am", "ismi"],["your name", "ismuka / isamuki"],
+      ["yes", "naam"],["no", "la / lastu"],["in", "fi"],["from", "min"],  
+      ["who", "man"], ["what", "maa"], ["where", "ayna"],
+      ["when", "mata"],["how", "kayfa"], ["or", "aw"], ["wait", "intazar"], ["work", "amal"],
+      ["but", "lakin"], ["after", "ba‘da"],
       ["it", "huwa / hiya"], ["we", "nahnu"], ["they", "hum"], ["go", "yadhhab"],
       ["come", "yajee'"], ["eat", "ya’kul"], ["drink", "yashrab"], ["see", "yaraa"],
       ["hear", "yasma‘"], ["say", "yaqool"], ["speak", "yatakallam"], ["want", "yureed"],
@@ -122,22 +141,21 @@
       ["need", "yahtaj"], ["have", "‘indahu"], ["live", "ya‘eesh"], ["sleep", "yanam"],
       ["wake", "yastaikiz"], ["walk", "yamshee"], ["run", "yarkudh"], ["sit", "yajlis"],
       ["stand", "yaqif"], ["help", "yusa‘id"], ["put", "yada‘"], ["open", "yaftah"],
-      ["close", "yughliq"], ["who", "man"], ["what", "ma"], ["where", "ayna"],
-      ["when", "mata"], ["why", "limadha"], ["how", "kayfa"], ["and", "wa"],
-      ["but", "lakin"], ["or", "aw"], ["because", "li’anna"], ["if", "itha"],
+      ["close", "yughliq"],  ["why", "limadha"], 
+      ["because", "li’anna"], ["if", "itha"],
       ["then", "thumma"], ["so", "fa"], ["also", "aydan"], ["though", "ma‘a dhalik"],
       ["while", "baynama"], ["big", "kabeer"], ["small", "saġeer"], ["good", "jayyid"],
       ["bad", "sayyi’"], ["hot", "haar"], ["cold", "baarid"], ["fast", "saree‘"],
-      ["slow", "batee’"], ["new", "jadeed"], ["old", "qadeem"], ["happy", "sa‘eed"],
+      ["slow", "batee’"], ["new", "jadeed"], ["old", "qadeem"], 
       ["sad", "hazeen"], ["easy", "sahl"], ["hard", "sa‘b"], ["long", "taweel"],
       ["short", "qaseer"], ["strong", "qawi"], ["weak", "da‘eef"], ["right", "saheeh"],
-      ["wrong", "khata’"], ["here", "huna"], ["there", "hunak"], ["now", "al-aan"],
+      ["wrong", "khata’"],  ["there", "hunak"], ["now", "al-aan"],
       ["very", "jiddan"], ["too", "aydan"], ["not", "laysa"], ["always", "da’iman"],
       ["sometimes", "ahyanan"], ["never", "abadan"], ["can", "yumkin"],
       ["could", "kana yumkin"], ["will", "sawfa"], ["would", "kan sawfa"],
       ["shall", "sawfa"], ["should", "yanbaghi"], ["must", "yajibu"],
       ["may", "qad"], ["today", "alyawm"], ["tomorrow", "ghadan"],
-      ["yesterday", "ams"], ["later", "ba‘d"], ["before", "qabl"], ["after", "ba‘da"],
+      ["yesterday", "ams"], ["later", "ba‘d"], ["before", "qabl"], 
       ["morning", "sabah"], ["evening", "masa’"], ["night", "layl"]
     ];
 
@@ -145,11 +163,12 @@
     let currentPage = 0;
     let currentPagePairs = [];
 
-    const englishCol = document.getElementById("english-column");
+    const englishList = document.getElementById("english-list");
     const arabicCol = document.getElementById("arabic-list");
     const endBtn = document.getElementById("end-btn");
     const nextBtn = document.getElementById("next-btn");
     const scoreDisplay = document.getElementById("score-display");
+    const pageSelector = document.getElementById("page-selector");
 
     let selectedEnglish = null;
     let selectedArabic = null;
@@ -161,8 +180,6 @@
         [array[i], array[j]] = [array[j], array[i]];
       }
     }
-
-    shuffle(wordPairs);
 
     function clearSelections() {
       if (selectedEnglish) selectedEnglish.classList.remove("selected");
@@ -230,6 +247,18 @@
       });
     }
 
+    function populatePageSelector() {
+      const totalPages = Math.ceil(wordPairs.length / PAGE_SIZE);
+      pageSelector.innerHTML = "";
+      for (let i = 0; i < totalPages; i++) {
+        const option = document.createElement("option");
+        option.value = i;
+        option.textContent = `Page ${i + 1}`;
+        pageSelector.appendChild(option);
+      }
+      pageSelector.value = currentPage;
+    }
+
     function loadPage(pageIndex) {
       score = 0;
       selectedEnglish = null;
@@ -243,36 +272,36 @@
       currentPagePairs = wordPairs.slice(start, end);
 
       if (currentPagePairs.length === 0) {
-        englishCol.innerHTML = "<h2>English</h2><p>No more words!</p>";
+        englishList.innerHTML = "<p>No more words!</p>";
         arabicCol.innerHTML = "";
         endBtn.style.display = "none";
         nextBtn.style.display = "none";
         return;
       }
 
-      const englishWords = currentPagePairs.map(p => p[0]);
-      const arabicWords = currentPagePairs.map(p => p[1]);
+      const shuffledEnglish = [...currentPagePairs].map(p => p[0]);
+      const shuffledArabic = [...currentPagePairs].map(p => p[1]);
+      shuffle(shuffledEnglish);
+      shuffle(shuffledArabic);
 
-      shuffle(englishWords);
-      shuffle(arabicWords);
+      createWordElements(shuffledEnglish, englishList, true);
+      createWordElements(shuffledArabic, arabicCol, false);
 
-      createWordElements(englishWords, englishCol, true);
-      createWordElements(arabicWords, arabicCol, false);
+      populatePageSelector();
     }
 
     endBtn.addEventListener("click", () => {
       scoreDisplay.textContent = `Your score: ${score} / ${currentPagePairs.length}`;
       endBtn.disabled = true;
 
-      // Rearrange correct pairs
-      englishCol.innerHTML = "<h2>English</h2>";
-      arabicCol.innerHTML = "<h2>Arabic Pronunciation</h2>";
+      englishList.innerHTML = "";
+      arabicCol.innerHTML = "";
 
       currentPagePairs.forEach(([en, ar]) => {
         const enDiv = document.createElement("div");
         enDiv.textContent = en;
         enDiv.className = "word correct";
-        englishCol.appendChild(enDiv);
+        englishList.appendChild(enDiv);
 
         const arDiv = document.createElement("div");
         arDiv.textContent = ar;
@@ -289,6 +318,11 @@
 
     nextBtn.addEventListener("click", () => {
       currentPage++;
+      loadPage(currentPage);
+    });
+
+    pageSelector.addEventListener("change", () => {
+      currentPage = parseInt(pageSelector.value);
       loadPage(currentPage);
     });
 
